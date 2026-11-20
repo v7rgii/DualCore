@@ -1,4 +1,4 @@
-# Fase 12 · Pestaña «Billete prueba»
+# Fase 13 · Pestaña «Billete prueba»
 
 ## Qué es
 Una pestaña nueva en el menú, justo después de «Mi billete», que abre directamente la **demo de Mi billete**

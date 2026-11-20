@@ -24,6 +24,8 @@ import path from 'node:path';
 import { geoBounds, geoContains } from 'd3-geo';
 
 const PORT = Number(process.env.PORT ?? 3001);
+/** Solo escucha en este ordenador: desde otros equipos de la red no se puede llegar al servidor. */
+const HOST = process.env.HOST ?? '127.0.0.1';
 const RDT = 'https://radardetrenes.com/api/v1';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const ROUTES_FILE = path.join(ROOT, '.cache', 'routes.json');
@@ -42,6 +44,14 @@ const FORGET_MS = 10 * 60_000;
 // ---------- Llamadas a la API con caché ----------
 
 const cache = new Map();
+/** Máximo de respuestas guardadas: así nadie puede llenar la memoria pidiendo trenes inventados. */
+const CACHE_MAX = 500;
+
+function remember(key, entry) {
+  cache.delete(key);
+  cache.set(key, entry);
+  while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
+}
 
 async function fetchJson(url, timeout = 12_000) {
   const res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(timeout) });
@@ -63,20 +73,20 @@ async function cached(apiPath, ttl, { retries = 1, timeout } = {}) {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const data = await fetchJson(`${RDT}${apiPath}`, timeout);
-        cache.set(apiPath, { data, at: Date.now() });
+        remember(apiPath, { data, at: Date.now() });
         return data;
       } catch (err) {
         lastError = err;
       }
     }
     if (hit) {
-      cache.set(apiPath, { ...hit, pending: null });
+      remember(apiPath, { ...hit, pending: null });
       return hit.data;
     }
     cache.delete(apiPath);
     throw lastError;
   })();
-  cache.set(apiPath, { ...(hit ?? {}), pending });
+  remember(apiPath, { ...(hit ?? {}), pending });
   return pending;
 }
 
@@ -515,40 +525,56 @@ function liveMap() {
 
 // ---------- HTTP ----------
 
+/**
+ * El servidor es de SOLO LECTURA: únicamente responde a GET y no tiene ninguna ruta que guarde o cambie datos.
+ * Lo que llega de fuera (números e identificadores de tren) se valida antes de usarlo.
+ */
+const TRAIN_ID = /^(ld|c)-[A-Za-z0-9_]{1,60}$/;
+const TRAIN_CODE = /^\d{1,6}$/;
+
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://localhost');
   const send = (code, body) => {
     res.writeHead(code, {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': 'no-store',
-      'access-control-allow-origin': '*',
+      'x-content-type-options': 'nosniff',
+      // Sin cabecera CORS: otras webs no pueden leer estos datos desde el navegador de quien visita la nuestra.
     });
-    res.end(JSON.stringify(body));
+    res.end(req.method === 'HEAD' ? undefined : JSON.stringify(body));
   };
 
   try {
-    if (req.method !== 'GET') return send(405, { error: 'Método no permitido' });
-    const p = url.pathname;
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.setHeader('allow', 'GET, HEAD');
+      return send(405, { error: 'Método no permitido' });
+    }
+    const { pathname: p, searchParams: params } = new URL(req.url, 'http://localhost');
     if (p === '/api/incidencias') return send(200, await snapshot());
     if (p === '/api/trenes') return send(200, liveMap());
     if (p === '/api/lines') return send(200, { lines: await getLines() });
     if (p === '/api/geometry') return send(200, { routes });
     if (p === '/api/trains') {
-      const codes = (url.searchParams.get('codes') ?? '').split(',').map((c) => c.trim()).filter(Boolean).slice(0, 40);
-      return send(200, await trainsByCode(codes));
+      const codes = [...new Set((params.get('codes') ?? '').split(',').map((c) => c.trim()))].filter((c) => TRAIN_CODE.test(c)).slice(0, 40);
+      return send(200, codes.length ? await trainsByCode(codes) : { live: {}, stats: {} });
     }
     const m = /^\/api\/trains\/([^/]+)$/.exec(p);
-    if (m) return send(200, await trainDetail(decodeURIComponent(m[1])));
+    if (m) {
+      const id = decodeURIComponent(m[1]);
+      if (!TRAIN_ID.test(id)) return send(400, { error: 'Identificador de tren no válido' });
+      return send(200, await trainDetail(id));
+    }
     if (p === '/api/health') return send(200, { ok: true, feed, trains: vehicles.size, routes: Object.keys(routes).length });
     send(404, { error: 'No encontrado' });
   } catch (err) {
-    send(502, { error: err.message });
+    // El detalle se queda en la consola del servidor; a la web solo le llega un mensaje genérico.
+    console.error('Error atendiendo', req.url, '→', err.message);
+    send(502, { error: 'La fuente de datos no responde. Inténtalo en unos segundos.' });
   }
 });
 
 // El servidor responde desde el primer momento (con 0 trenes) y se va llenando en cuanto llegan los datos.
-server.listen(PORT, () => {
-  console.log(`🚆 Datos en tiempo real en http://localhost:${PORT}/api (incidencias, trenes, líneas, trazados)`);
+server.listen(PORT, HOST, () => {
+  console.log(`🚆 Datos en tiempo real en http://${HOST}:${PORT}/api (incidencias, trenes, líneas, trazados)`);
 });
 await Promise.all([loadRoutes(), loadStations()]);
 await pollFleet();

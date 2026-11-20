@@ -7,8 +7,8 @@
 - No hemos usado otras herramientas de IA, ni IA dentro de la aplicación: VíaClara no llama a ningún modelo de IA.
 
 ## Cuánto ha participado
-- **33 de los 42 commits** llevan la firma `Co-Authored-By: Claude Opus 5.5`: la IA escribió buena parte del código
-  y lo hicimos commit nosotros. Los otros 9 son la plantilla inicial del repositorio (README y este archivo) y
+- **36 de los 46 commits** llevan la firma `Co-Authored-By: Claude Opus 5.5`: la IA escribió buena parte del código
+  y lo hicimos commit nosotros. Los otros 10 son la plantilla inicial del repositorio (README y este archivo) y
   algunos merges hechos a mano.
 - La IA nunca ha hecho commits ni ha subido nada a GitHub por su cuenta: solo cuando se lo hemos pedido.
 
@@ -48,7 +48,7 @@ El ciclo de cada funcionalidad fue siempre el mismo:
   y le pedimos que lo corrigiera.
 
 ## Cómo comprobamos lo que hizo
-- Tests automáticos con `node --test` (21 pruebas de la lógica de compensaciones y huella de carbono).
+- Tests automáticos con `node --test` (27 pruebas de la lógica de compensaciones, huella de carbono y clasificación de avisos).
 - Prueba manual de cada cambio en la web, y la IA también en su navegador integrado.
 - Las cifras oficiales (compensaciones de Renfe, factores de emisión del MITECO) están citadas con su fuente en
   la fase correspondiente, para poder comprobarlas.

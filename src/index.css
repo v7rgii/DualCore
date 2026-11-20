@@ -679,10 +679,23 @@ button.official-stat:hover { border-color: var(--border-strong); }
 .live-stops li.is-passed { color: var(--muted); }
 .live-stops li.is-passed::after { background: var(--line); }
 
-.alert-kind { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); }
-.alert-kind--incidencia { color: var(--st-delay); border-color: color-mix(in srgb, var(--st-delay) 40%, var(--border)); }
-.alert-kind--cancelacion { color: var(--st-delay); }
-.alert-kind--obras { color: #b07a1c; }
+/* Avisos clasificados: huelga (rojo), cancelación (naranja), retraso (ámbar), otros (neutro). */
+.alerts { --cat-huelga: var(--danger); --cat-cancelacion: var(--st-delay); --cat-retraso: #b07a1c; --cat-otros: var(--ink-2); }
+:root[data-theme='dark'] .alerts { --cat-retraso: #e0b05a; }
+.alerts-note { font-size: 0.78rem; color: var(--muted); margin-top: -6px; }
+.alert-filter { display: inline-flex; align-items: center; gap: 6px; }
+.alert-filter-count { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.alert-filter--huelga.is-on { border-color: var(--cat-huelga); }
+.alert-filter--cancelacion.is-on { border-color: var(--cat-cancelacion); }
+.alert-filter--retraso.is-on { border-color: var(--cat-retraso); }
+.alert--huelga { border-left: 3px solid var(--cat-huelga); }
+.alert--cancelacion { border-left: 3px solid var(--cat-cancelacion); }
+.alert--retraso { border-left: 3px solid var(--cat-retraso); }
+.alert-cat { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--cat-otros); }
+.alert-cat--huelga { color: var(--cat-huelga); border-color: color-mix(in srgb, var(--cat-huelga) 45%, var(--border)); }
+.alert-cat--cancelacion { color: var(--cat-cancelacion); border-color: color-mix(in srgb, var(--cat-cancelacion) 45%, var(--border)); }
+.alert-cat--retraso { color: var(--cat-retraso); border-color: color-mix(in srgb, var(--cat-retraso) 45%, var(--border)); }
+.alert-calledoff { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; color: var(--st-moving); background: color-mix(in srgb, var(--st-moving) 12%, var(--surface)); }
 .alert-network { font-size: 0.75rem; color: var(--ink-2); }
 
 @media (prefers-reduced-motion: reduce) {

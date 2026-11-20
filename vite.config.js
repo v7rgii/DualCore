@@ -2,7 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Las peticiones a /api las atiende el servidor de datos (server/index.mjs).
-const proxy = { '/api': 'http://localhost:3001' };
+// Se usa 127.0.0.1 (no «localhost») porque el servidor solo escucha en esa dirección.
+const proxy = { '/api': 'http://127.0.0.1:3001' };
 
 export default defineConfig({
   plugins: [react()],
