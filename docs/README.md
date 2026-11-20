@@ -33,6 +33,7 @@ Cada fase explica qué se hizo, por qué y dónde está el código.
 | [Fase 12](fases/fase-12-fronteras-y-movil.md) | Fronteras ajustadas, sin vías en las islas y formulario de billetes en móvil |
 | [Fase 13](fases/fase-13-avisos-y-seguridad.md) | Incidencias: avisos clasificados en huelgas, cancelaciones y retrasos; revisión de seguridad del servidor |
 | [Fase 14](fases/fase-14-billete-prueba.md) | Pestaña «Billete prueba»: la demo de Mi billete con datos ficticios, también en producción |
+| [Fase 15](fases/fase-15-ultimos-retoques.md) | Avisos traducidos a 5 idiomas y billetes con transbordo cuando no hay tren directo |
 
 ## Fuentes de datos
 

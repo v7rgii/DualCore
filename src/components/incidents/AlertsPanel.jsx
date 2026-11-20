@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { normalize } from '../../lib/text.js';
 import { ALERT_CATEGORIES, CATEGORY_LABEL, classifyAlert } from '../../lib/alertCategory.js';
+import { ALERT_LANGUAGES, useAlertTranslations } from '../../lib/useAlertTranslations.js';
 
 const PAGE = 8;
 
@@ -20,16 +21,16 @@ export default function AlertsPanel({ alerts, query }) {
   // Cada aviso con su categoría, ordenados por categoría (se respeta el orden de Renfe dentro de cada una).
   const classified = useMemo(
     () =>
-      alerts
-        .map((a, i) => ({ ...a, ...classifyAlert(a), i }))
-        .sort((a, b) => ORDER[a.category] - ORDER[b.category] || a.i - b.i),
+      alerts.map((a, i) => ({ ...a, ...classifyAlert(a), i })).sort((a, b) => ORDER[a.category] - ORDER[b.category] || a.i - b.i),
     [alerts],
   );
 
   const matching = useMemo(() => {
     const q = normalize(query.trim());
     return q
-      ? classified.filter((a) => normalize(`${a.text} ${a.lines.join(' ')} ${a.stops.join(' ')} ${a.networks.join(' ')}`).includes(q))
+      ? classified.filter((a) =>
+          normalize(`${a.text} ${a.lines.join(' ')} ${a.stops.join(' ')} ${a.networks.join(' ')}`).includes(q),
+        )
       : classified;
   }, [classified, query]);
 
@@ -40,6 +41,21 @@ export default function AlertsPanel({ alerts, query }) {
   }, [matching]);
 
   const shown = category === 'all' ? matching : matching.filter((a) => a.category === category);
+  const visible = shown.slice(0, limit);
+
+  // Traducción de los avisos visibles al idioma elegido (y avisos que se quieren ver en su versión original).
+  const [lang, setLang] = useState('original');
+  const [showOriginal, setShowOriginal] = useState(() => new Set());
+  const translated = useAlertTranslations(
+    visible.map((a) => a.id),
+    lang,
+  );
+  const toggleOriginal = (id) =>
+    setShowOriginal((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   const choose = (id) => {
     setCategory(id);
@@ -51,8 +67,36 @@ export default function AlertsPanel({ alerts, query }) {
       <div className="alerts-head">
         <h2>Avisos de la red</h2>
         <span className="chip-count">{matching.length}</span>
+        <label className="alert-lang">
+          <span>Idioma</span>
+          <select
+            value={lang}
+            onChange={(e) => {
+              setLang(e.target.value);
+              setShowOriginal(new Set());
+            }}
+          >
+            {ALERT_LANGUAGES.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-      <p className="alerts-note">Solo avisos oficiales publicados por Renfe. Se clasifican por su contenido.</p>
+      <p className="alerts-note">
+        Solo avisos oficiales publicados por Renfe. Se clasifican por su contenido.
+        {lang !== 'original' && (
+          <>
+            {' '}
+            <strong>Traducción automática</strong> (Google Traductor): ante cualquier duda, vale el texto original.
+            {translated.pending > 0 && <span className="alert-translating"> Traduciendo {translated.pending}…</span>}
+            {translated.failed > 0 && (
+              <span> {translated.failed} no se han podido traducir y se muestran en su idioma original.</span>
+            )}
+          </>
+        )}
+      </p>
 
       <div className="chips alert-filters" role="radiogroup" aria-label="Tipo de aviso">
         {[{ id: 'all', label: 'Todos' }, ...ALERT_CATEGORIES].map((c) => {
@@ -79,29 +123,38 @@ export default function AlertsPanel({ alerts, query }) {
         </p>
       ) : (
         <ul className="alert-list">
-          {shown.slice(0, limit).map((a) => (
-            <li key={a.id} className={`alert alert--${a.category}`}>
-              <div className="alert-tags">
-                <span className={`alert-cat alert-cat--${a.category}`}>
-                  {a.category === 'otros' ? a.kindLabel : CATEGORY_LABEL[a.category]}
-                </span>
-                {a.calledOff && <span className="alert-calledoff">Desconvocada</span>}
-                {a.networks.slice(0, 2).map((n) => (
-                  <span key={n} className="alert-network">
-                    {n}
+          {visible.map((a) => {
+            const translation = translated.texts[a.id];
+            const original = showOriginal.has(a.id) || !translation;
+            return (
+              <li key={a.id} className={`alert alert--${a.category}`}>
+                <div className="alert-tags">
+                  <span className={`alert-cat alert-cat--${a.category}`}>
+                    {a.category === 'otros' ? a.kindLabel : CATEGORY_LABEL[a.category]}
                   </span>
-                ))}
-                {a.lines.slice(0, 6).map((l) => (
-                  <span key={l} className="badge">
-                    {l}
-                  </span>
-                ))}
-                {a.start && <span className="alert-date">Desde {fmt(a.start)}</span>}
-              </div>
-              <p>{a.text}</p>
-              {a.stops.length > 0 && <p className="alert-stops">Estaciones: {a.stops.slice(0, 5).join(', ')}</p>}
-            </li>
-          ))}
+                  {a.calledOff && <span className="alert-calledoff">Desconvocada</span>}
+                  {a.networks.slice(0, 2).map((n) => (
+                    <span key={n} className="alert-network">
+                      {n}
+                    </span>
+                  ))}
+                  {a.lines.slice(0, 6).map((l) => (
+                    <span key={l} className="badge">
+                      {l}
+                    </span>
+                  ))}
+                  {a.start && <span className="alert-date">Desde {fmt(a.start)}</span>}
+                </div>
+                <p lang={original ? undefined : lang}>{original ? a.text : translation}</p>
+                {translation && (
+                  <button type="button" className="link alert-original" onClick={() => toggleOriginal(a.id)}>
+                    {original ? 'Ver traducción' : 'Ver original'}
+                  </button>
+                )}
+                {a.stops.length > 0 && <p className="alert-stops">Estaciones: {a.stops.slice(0, 5).join(', ')}</p>}
+              </li>
+            );
+          })}
         </ul>
       )}
       {shown.length > limit && (

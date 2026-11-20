@@ -4,9 +4,15 @@ import TrainList from '../components/tickets/TrainList.jsx';
 import BookingSummary, { legTotal } from '../components/tickets/BookingSummary.jsx';
 import PassengerForm from '../components/tickets/PassengerForm.jsx';
 import Confirmation from '../components/tickets/Confirmation.jsx';
-import { findStationOption, loadTimetable, searchTrains, todayIso } from '../lib/timetable.js';
+import { findStationOption, loadTimetable, searchConnections, searchTrains, todayIso } from '../lib/timetable.js';
 import { scrollToSection } from '../lib/navigation.js';
 import { useInView } from '../lib/useInView.js';
+
+/** Trenes directos; si no hay ninguno ese día, opciones con un transbordo. */
+function findJourneys(tt, fromIds, toIds, iso) {
+  const direct = searchTrains(tt, fromIds, toIds, iso);
+  return direct.length ? direct : searchConnections(tt, fromIds, toIds, iso);
+}
 
 const STEPS = [
   { id: 'outbound', label: 'Ida' },
@@ -50,11 +56,11 @@ export default function TicketsPage({ trip }) {
   );
 
   const outResults = useMemo(
-    () => (timetable && query ? searchTrains(timetable, query.from.ids, query.to.ids, query.dateOut) : []),
+    () => (timetable && query ? findJourneys(timetable, query.from.ids, query.to.ids, query.dateOut) : []),
     [timetable, query],
   );
   const backResults = useMemo(
-    () => (timetable && query?.roundTrip ? searchTrains(timetable, query.to.ids, query.from.ids, query.dateBack) : []),
+    () => (timetable && query?.roundTrip ? findJourneys(timetable, query.to.ids, query.from.ids, query.dateBack) : []),
     [timetable, query],
   );
 

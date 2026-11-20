@@ -472,6 +472,22 @@ button, input { font: inherit; color: inherit; }
 .train-stations { grid-area: stations; font-size: 0.85rem; color: var(--ink-2); }
 .train-stations span + span::before { content: ' → '; color: var(--muted); }
 .train-meta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 0.78rem; color: var(--muted); }
+
+/* Viajes con transbordo */
+.transfer-notice {
+  display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px;
+  font-size: 0.85rem; color: var(--ink-2); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+.transfer-notice svg { flex: none; margin-top: 2px; color: var(--accent); }
+.train-meta-leg { display: inline-flex; align-items: center; gap: 6px; }
+.train-meta-leg + .train-meta-leg::before { content: '+'; color: var(--muted); margin-right: 2px; }
+.train-transfer { flex-basis: 100%; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--ink-2); }
+.train-transfer svg { color: var(--accent); }
+.train-transfer strong { font-weight: 600; color: var(--ink); }
+.train-transfer-wait { color: var(--muted); }
+.train-legs { list-style: none; margin: 0; padding: 0 16px 12px; display: grid; gap: 6px; font-size: 0.82rem; color: var(--ink-2); }
+.train-legs li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.train-legs-num { color: var(--muted); font-size: 0.78rem; }
 .badge { padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem; background: var(--accent-soft); color: var(--accent); }
 .badge--avlo { background: color-mix(in srgb, #8a5bb5 16%, transparent); color: color-mix(in srgb, #8a5bb5 80%, var(--ink)); }
 .badge--regional, .badge--intercity { background: var(--surface-2); color: var(--ink-2); }
@@ -498,6 +514,7 @@ button, input { font: inherit; color: inherit; }
 .summary h3 { font-size: 1.05rem; }
 .summary-od { font-weight: 600; }
 .summary-meta { font-size: 0.8rem; color: var(--muted); }
+.summary-legs { margin: 2px 0 0; padding-left: 18px; display: grid; gap: 2px; font-size: 0.78rem; color: var(--ink-2); }
 .summary-leg { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 4px; }
 .summary-leg .eyebrow { margin: 0; }
 .summary-leg.is-empty p { font-size: 0.85rem; color: var(--muted); }
@@ -632,7 +649,7 @@ button.official-stat:hover { border-color: var(--border-strong); }
 .official-tag.is-ok { color: var(--st-moving); }
 
 .alerts { margin-top: 20px; padding: 20px 22px; display: grid; gap: 12px; }
-.alerts-head { display: flex; align-items: center; gap: 10px; }
+.alerts-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .alerts-head h2 { font-size: 1.1rem; }
 .alert-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .alert { padding: 12px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); display: grid; gap: 6px; }
@@ -683,6 +700,15 @@ button.official-stat:hover { border-color: var(--border-strong); }
 .alerts { --cat-huelga: var(--danger); --cat-cancelacion: var(--st-delay); --cat-retraso: #b07a1c; --cat-otros: var(--ink-2); }
 :root[data-theme='dark'] .alerts { --cat-retraso: #e0b05a; }
 .alerts-note { font-size: 0.78rem; color: var(--muted); margin-top: -6px; }
+.alerts-note strong { color: var(--ink-2); }
+.alert-translating { color: var(--accent); }
+.alert-lang { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
+.alert-lang select {
+  font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+}
+.alert-lang select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.alert-original { justify-self: start; font-size: 0.75rem; }
 .alert-filter { display: inline-flex; align-items: center; gap: 6px; }
 .alert-filter-count { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .alert-filter--huelga.is-on { border-color: var(--cat-huelga); }

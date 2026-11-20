@@ -33,9 +33,24 @@ function Leg({ label, leg, date, pax, carbon, onEdit }) {
       <p className="summary-route">
         {fmtTime(leg.train.dep)} {leg.train.from} → {fmtTime(leg.train.arr)} {leg.train.to}
       </p>
-      <p className="summary-meta">
-        {fmtDate(date)} · {leg.train.type} {leg.train.number} · {leg.fare.label}
-      </p>
+      {leg.train.legs ? (
+        <>
+          <p className="summary-meta">
+            {fmtDate(date)} · 1 transbordo · {leg.fare.label}
+          </p>
+          <ol className="summary-legs">
+            {leg.train.legs.map((l) => (
+              <li key={l.id}>
+                {l.type} {l.number}: {fmtTime(l.dep)} {l.from} → {fmtTime(l.arr)} {l.to}
+              </li>
+            ))}
+          </ol>
+        </>
+      ) : (
+        <p className="summary-meta">
+          {fmtDate(date)} · {leg.train.type} {leg.train.number} · {leg.fare.label}
+        </p>
+      )}
       <p className="summary-price">{fmtPrice(legTotal(leg, pax))}</p>
       <CarbonSaving comparison={carbon} />
     </div>
