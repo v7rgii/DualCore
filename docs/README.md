@@ -31,6 +31,7 @@ Cada fase explica qué se hizo, por qué y dónde está el código.
 | [Fase 10](fases/fase-10-huella-carbono.md) | Billetes: CO₂ que ahorras en tren frente al coche, con factores oficiales del MITECO y Renfe |
 | [Fase 12](fases/fase-12-avisos-y-seguridad.md) | Incidencias: avisos clasificados en huelgas, cancelaciones y retrasos; revisión de seguridad del servidor |
 | [Fase 13](fases/fase-13-billete-prueba.md) | Pestaña «Billete prueba»: la demo de Mi billete con datos ficticios, también en producción |
+| [Fase 14](fases/fase-14-vias-incidencias.md) | Incidencias: el mapa en directo usa la red ferroviaria real (OpenStreetMap) en vez de rectas entre estaciones |
 
 ## Fuentes de datos
 

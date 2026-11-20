@@ -3,6 +3,8 @@ import { WIDTH, buildBase, buildGeometry } from '../../lib/mapGeometry.js';
 import { useMapZoom } from '../../lib/useMapZoom.js';
 import { STATUS_BY_ID } from '../../lib/useLiveTrains.js';
 import { BaseLayer, LabelLayer, ZoomControls } from '../MapBase.jsx';
+import { useRailways } from '../../lib/useRailways.js';
+import RailNetwork from '../live/RailNetwork.jsx';
 
 const FOLLOW_ZOOM = 6;
 
@@ -10,6 +12,8 @@ const FOLLOW_ZOOM = 6;
  * Mapa con la posición GPS de cada tren, coloreada según su estado.
  * Los puntos se desplazan suavemente entre una actualización y la siguiente,
  * y el tren seleccionado muestra su recorrido real y sus paradas.
+ * Las vías de larga distancia se dibujan con la red ferroviaria real de OpenStreetMap (la misma que el mapa
+ * de la portada), en vez de con rectas entre estaciones. Si esa red no carga, se usan las rectas.
  */
 export default function LiveMap({ provinces, countries, network, cerTracks, trains, selected, follow, onSelect }) {
   const svgRef = useRef(null);
@@ -19,6 +23,9 @@ export default function LiveMap({ provinces, countries, network, cerTracks, trai
   const base = useMemo(() => buildBase(provinces, countries, geo), [provinces, countries, geo]);
   const toPaths = (lines) => lines.map((l) => ({ id: l.id, d: geo.path({ type: 'MultiLineString', coordinates: l.coords }) }));
   const avTracks = useMemo(() => toPaths(network), [network, geo]);
+  const railways = useRailways();
+  // `network` llega vacío cuando el filtro es «solo Cercanías»: entonces tampoco se dibuja la red.
+  const showNetwork = network.length > 0;
   const cerPaths = useMemo(() => toPaths(cerTracks), [cerTracks, geo]);
   const { transform, zoomBy, reset, focus } = useMapZoom(svgRef, geo.height);
   const k = transform.k;
@@ -67,7 +74,7 @@ export default function LiveMap({ provinces, countries, network, cerTracks, trai
   };
 
   return (
-    <div className="map-frame" onPointerLeave={() => setHover(null)}>
+    <div className="map-frame incidents-map" onPointerLeave={() => setHover(null)}>
       <svg
         ref={svgRef}
         className={`map-svg${selectedId ? ' has-selection' : ''}`}
@@ -78,8 +85,9 @@ export default function LiveMap({ provinces, countries, network, cerTracks, trai
         <rect className="map-sea" y={-1000} width={WIDTH} height={geo.height + 1000} onClick={() => onSelect(null)} />
         <g transform={transform.toString()}>
           <BaseLayer {...base} inset={geo.inset} />
+          {showNetwork && railways && <RailNetwork data={railways} path={geo.path} />}
           <Tracks tracks={cerPaths} variant="cer" />
-          <Tracks tracks={avTracks} variant="av" />
+          {!railways && <Tracks tracks={avTracks} variant="av" />}
           <LabelLayer {...base} k={k} />
 
           {route?.d && (
@@ -127,8 +135,8 @@ export default function LiveMap({ provinces, countries, network, cerTracks, trai
 
       <div className="map-legend" aria-hidden="true">
         <span>
-          <span className="legend-track legend-track--av" />
-          Vía de alta velocidad
+          <span className={`legend-track ${railways ? 'legend-track--rail' : 'legend-track--av'}`} />
+          {railways ? 'Red ferroviaria' : 'Vía de alta velocidad'}
         </span>
         <span>
           <span className="legend-track legend-track--cer" />
@@ -141,6 +149,8 @@ export default function LiveMap({ provinces, countries, network, cerTracks, trai
           </span>
         ))}
       </div>
+
+      {showNetwork && railways && <div className="map-attribution">Vías © OpenStreetMap</div>}
 
       {route && selectedId && (
         <div className="route-note">{route.real ? 'Recorrido real del tren' : 'Recorrido aproximado (uniendo sus paradas)'}</div>

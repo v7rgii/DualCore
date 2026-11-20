@@ -582,6 +582,9 @@ button, input { font: inherit; color: inherit; }
 .legend-track { display: inline-block; width: 16px; height: 0; border-radius: 2px; }
 .legend-track--av { border-top: 3px solid var(--track-av); }
 .legend-track--cer { border-top: 2px solid var(--track-cer); }
+/* Incidencias: la red real (OpenStreetMap) con el gris claro de las antiguas vías de alta velocidad. */
+.incidents-map .rail-net-base { stroke: var(--track-av); stroke-opacity: 1; stroke-width: 1.8px; }
+.legend-track--rail { border-top: 3px solid var(--track-av); }
 .train-dot { stroke: var(--casing); cursor: pointer; transition: r 0.2s; }
 .train-dot--delay { fill: var(--st-delay); }
 .train-dot--moving { fill: var(--st-moving); }
