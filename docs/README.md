@@ -34,6 +34,7 @@ Cada fase explica qué se hizo, por qué y dónde está el código.
 | [Fase 13](fases/fase-13-avisos-y-seguridad.md) | Incidencias: avisos clasificados en huelgas, cancelaciones y retrasos; revisión de seguridad del servidor |
 | [Fase 14](fases/fase-14-billete-prueba.md) | Pestaña «Billete prueba»: la demo de Mi billete con datos ficticios, también en producción |
 | [Fase 15](fases/fase-15-vias-incidencias.md) | Incidencias: el mapa en directo usa la red ferroviaria real (OpenStreetMap) en vez de rectas entre estaciones |
+| [Fase 16](fases/fase-16-ultimos-retoques.md) | Avisos traducidos a 5 idiomas y billetes con transbordo cuando no hay tren directo |
 
 ## Fuentes de datos
 

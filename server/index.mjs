@@ -291,10 +291,15 @@ const CLUSTERS = {
 
 const KIND_LABEL = { incidencia: 'Incidencia', obras: 'Obras', cancelacion: 'Cancelación', otros: 'Aviso' };
 
+/** Texto original de cada aviso activo (id → texto). Solo estos textos se pueden traducir. */
+let alertTexts = new Map();
+
 async function getAlerts() {
   try {
     const data = await cached('/alerts?scope=network', 60_000, { timeout: 15_000 });
-    return (data.items ?? []).map((a) => ({
+    const items = data.items ?? [];
+    alertTexts = new Map(items.map((a) => [String(a.id), String(a.text ?? '')]));
+    return items.map((a) => ({
       id: a.id,
       kind: a.kind,
       kindLabel: KIND_LABEL[a.kind] ?? 'Aviso',
@@ -310,6 +315,71 @@ async function getAlerts() {
   } catch {
     return [];
   }
+}
+
+// ---------- Traducción de avisos ----------
+
+/**
+ * Traducción automática de los avisos a castellano, inglés, catalán, euskera y gallego.
+ * Servicio: Google Traductor (versión web sin clave, translate.googleapis.com). No es una API oficial con
+ * contrato: si deja de responder, la web sigue mostrando el texto original. Para cambiar de servicio,
+ * basta con cambiar translateText().
+ *  - Solo se traducen avisos que existen ahora mismo (por su id): el servidor no traduce textos cualquiera.
+ *  - Cada traducción se guarda en memoria para no repetir peticiones.
+ */
+const LANGUAGES = ['es', 'en', 'ca', 'eu', 'gl'];
+const translations = new Map();
+const TRANSLATIONS_MAX = 3000;
+const ALERT_ID = /^[\w.:-]{1,120}$/;
+
+async function translateText(text, lang) {
+  const params = new URLSearchParams({ client: 'gtx', sl: 'auto', tl: lang, dt: 't', q: text.slice(0, 4500) });
+  const res = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, { signal: AbortSignal.timeout(12_000) });
+  if (!res.ok) throw new Error(`Traductor: HTTP ${res.status}`);
+  const data = await res.json();
+  const out = (data?.[0] ?? []).map((part) => part?.[0] ?? '').join('');
+  if (!out) throw new Error('Traductor: respuesta vacía');
+  return out;
+}
+
+/**
+ * Los avisos de Euskadi llegan en los dos idiomas oficiales: «texto en euskera // texto en castellano».
+ * Para euskera y castellano se usa directamente la parte oficial; para el resto se traduce la parte en castellano.
+ */
+function bilingualParts(text) {
+  const parts = text.split(/\s+\/\/\s+/);
+  return parts.length === 2 && parts[0].trim() && parts[1].trim() ? { eu: parts[0].trim(), es: parts[1].trim() } : null;
+}
+
+async function translateAlert(text, lang) {
+  const both = bilingualParts(text);
+  if (both) return both[lang] ?? translateText(both.es, lang);
+  return translateText(text, lang);
+}
+
+/** Traduce los avisos pedidos (máx. 10 por petición). Los que fallan se devuelven sin traducir (null). */
+async function translateAlerts(ids, lang) {
+  if (!alertTexts.size) await getAlerts();
+  const out = {};
+  await Promise.all(
+    ids.map(async (id) => {
+      const text = alertTexts.get(id);
+      if (!text) return;
+      const key = `${lang}|${id}|${text.length}`;
+      if (!translations.has(key)) {
+        try {
+          translations.set(key, await translateAlert(text, lang));
+          if (translations.size > TRANSLATIONS_MAX) translations.delete(translations.keys().next().value);
+        } catch (err) {
+          console.error('No se pudo traducir el aviso', id, '→', err.message);
+          out[id] = null;
+          return;
+        }
+      }
+      out[id] = translations.get(key);
+    }),
+  );
+  return out;
 }
 
 // ---------- Trazados reales de larga distancia ----------
@@ -562,6 +632,12 @@ const server = http.createServer(async (req, res) => {
       const id = decodeURIComponent(m[1]);
       if (!TRAIN_ID.test(id)) return send(400, { error: 'Identificador de tren no válido' });
       return send(200, await trainDetail(id));
+    }
+    if (p === '/api/traducir') {
+      const lang = params.get('lang');
+      if (!LANGUAGES.includes(lang)) return send(400, { error: 'Idioma no disponible' });
+      const ids = [...new Set((params.get('ids') ?? '').split(','))].filter((id) => ALERT_ID.test(id)).slice(0, 10);
+      return send(200, { lang, items: ids.length ? await translateAlerts(ids, lang) : {} });
     }
     if (p === '/api/health') return send(200, { ok: true, feed, trains: vehicles.size, routes: Object.keys(routes).length });
     send(404, { error: 'No encontrado' });
